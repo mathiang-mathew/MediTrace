@@ -146,17 +146,21 @@ def seed():
                  equipment, medications, procedures),
             )
 
-        # 0-3 CHW visits per patient; some next-followup dates are already
-        # past (overdue), some are upcoming, to exercise Feature 6
+        # 0-3 CHW visits per patient. next_followup_date is calculated
+        # relative to that visit's own date (a few days to a few weeks
+        # later) rather than picked independently, so it can never land
+        # before the visit happened. Some still end up overdue and some
+        # upcoming relative to today, so Feature 6 has real cases to find.
         for _ in range(random.randint(0, 3)):
-            visit_date = random_date(1, 60)
+            visit_dt = TODAY - timedelta(days=random.randint(1, 60))
+            followup_dt = visit_dt + timedelta(days=random.randint(3, 45))
             reason = random.choice(CHW_REASONS)
-            next_followup = random_date(-30, 20)
             run_insert(
                 "INSERT INTO chw_visits "
                 "(patient_id, visit_date, reason, notes, next_followup_date) "
                 "VALUES (?, ?, ?, ?, ?)",
-                (patient_id, visit_date, reason, "Routine notes.", next_followup),
+                (patient_id, visit_dt.strftime("%Y-%m-%d"), reason,
+                 "Routine notes.", followup_dt.strftime("%Y-%m-%d")),
             )
 
     print(f"Seeded {NUM_PATIENTS} patients with care details, infections, and CHW visits.")
