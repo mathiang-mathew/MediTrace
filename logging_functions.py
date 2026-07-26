@@ -183,23 +183,3 @@ if __name__ == "__main__":
         else:
             print("Invalid choice. Please enter 0-3.")
 
-if __name__ == "__main__":
-    # Standalone test menu. Esther's main.py calls the functions directly.
-    while True:
-        print("\n--- MediTrace: Logging Module ---")
-        print("1. Log infection case")
-        print("2. Log CHW visit")
-        print("3. List follow-ups due")
-        print("0. Back")
-        choice = input("Choice: ").strip()
-
-        if choice == "1":
-            log_infection_case()
-        elif choice == "2":
-            log_chw_visit()
-        elif choice == "3":
-            list_followups_due()
-        elif choice == "0":
-            break
-        else:
-            print("Invalid choice. Please enter 0-3.")
