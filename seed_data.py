@@ -73,7 +73,7 @@ CHW_REASONS = [
     "Vaccination visit", "Postnatal check", "Blood pressure monitoring",
 ]
 
-NUM_PATIENTS = 28
+NUM_PATIENTS = 70
 TODAY = datetime.now()
 
 
@@ -94,6 +94,24 @@ def weighted_equipment_list():
     return items
 
 
+def weighted_medication_list():
+    """Same idea as weighted_equipment_list(), boosting Ceftriaxone so
+    medication-based HAI analysis has a clear leader instead of a tie."""
+    meds = random.sample(MEDICATIONS, k=random.randint(1, 2))
+    if random.random() < 0.4 and "Ceftriaxone" not in meds:
+        meds.append("Ceftriaxone")
+    return meds
+
+
+def weighted_procedure_list():
+    """Same idea again, boosting Wound dressing so procedure-based HAI
+    analysis isn't nearly flat across all six procedures."""
+    procs = random.sample(PROCEDURES, k=random.randint(1, 2))
+    if random.random() < 0.4 and "Wound dressing" not in procs:
+        procs.append("Wound dressing")
+    return procs
+
+
 def seed():
     create_tables()
 
@@ -102,6 +120,11 @@ def seed():
     conn.execute("DELETE FROM chw_visits")
     conn.execute("DELETE FROM care_details")
     conn.execute("DELETE FROM patients")
+    # AUTOINCREMENT tracks the highest id ever issued in a separate
+    # sqlite_sequence table that DELETE alone doesn't touch, so without
+    # this line every re-seed would keep climbing (1-28, then 29-56...)
+    # instead of giving everyone the same ids each time.
+    conn.execute("DELETE FROM sqlite_sequence")
     conn.commit()
     conn.close()
 
@@ -123,8 +146,8 @@ def seed():
         doctor = random.choice(DOCTORS)
         nurse = random.choice(NURSES)
         equipment = ", ".join(weighted_equipment_list())
-        medications = ", ".join(random.sample(MEDICATIONS, k=random.randint(1, 2)))
-        procedures = ", ".join(random.sample(PROCEDURES, k=random.randint(1, 2)))
+        medications = ", ".join(weighted_medication_list())
+        procedures = ", ".join(weighted_procedure_list())
 
         run_insert(
             "INSERT INTO care_details "
