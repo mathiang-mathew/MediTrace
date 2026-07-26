@@ -127,3 +127,38 @@ def log_chw_visit():
 
     print(f"\nVisit logged for {patient['name']}.")
     print(f"  Next follow-up: {followup}")
+def list_followups_due():
+    """Feature 6 — list patients whose follow-up is due today or already overdue."""
+
+    # 1. Today, in the same text format the database uses
+    today = date.today().isoformat()
+
+    # 2. JOIN because the dates are in chw_visits but the names are in patients
+    rows = run_query(
+        """SELECT p.patient_id, p.name, p.contact,
+                  v.next_followup_date, v.reason
+           FROM chw_visits v
+           JOIN patients p ON p.patient_id = v.patient_id
+           WHERE v.next_followup_date IS NOT NULL
+             AND v.next_followup_date <= ?
+           ORDER BY v.next_followup_date ASC""",
+        (today,),
+    )
+
+    if not rows:
+        print("\nNo patients are due for follow-up today.")
+        return
+
+    # 3. Print as a table
+    print(f"\nPatients due for follow-up (as of {today})")
+    print("-" * 70)
+    print(f"{'ID':<5}{'Name':<22}{'Due date':<14}{'Status':<12}{'Reason'}")
+    print("-" * 70)
+
+    for row in rows:
+        status = "OVERDUE" if row["next_followup_date"] < today else "Due today"
+        print(f"{row['patient_id']:<5}{row['name']:<22}"
+              f"{row['next_followup_date']:<14}{status:<12}{row['reason']}")
+
+    print("-" * 70)
+    print(f"{len(rows)} follow-up(s) due.")
