@@ -82,3 +82,48 @@ def log_infection_case():
     print(f"  Doctor:     {care['doctor']}")
     print(f"  Equipment:  {care['equipment']}")
     print(f"  Procedures: {care['procedures']}")
+
+def log_chw_visit():
+    """Feature 4 — log a community health worker visit and set the next follow-up."""
+
+    # 1. Same patient check as before
+    raw = input("Enter patient ID: ").strip()
+    if not raw.isdigit():
+        print("Patient ID must be a number.")
+        return
+
+    patient = get_patient(int(raw))
+    if patient is None:
+        print(f"No patient found with ID {raw}.")
+        return
+
+    # 2. Collect the visit details
+    print(f"\nLogging CHW visit for: {patient['name']}")
+
+    visit_date = prompt_date("Enter visit date (YYYY-MM-DD): ")
+    reason = prompt_nonempty("Enter reason for visit: ")
+    notes = input("Enter notes (optional, press Enter to skip): ").strip()
+
+    # 3. A follow-up in the past is a data-entry error
+    while True:
+        followup = prompt_date("Enter next follow-up date (YYYY-MM-DD): ")
+        if followup >= visit_date:
+            break
+        print("The follow-up date cannot be before the visit date.")
+
+    # 4. Save the visit
+    run_insert(
+        """INSERT INTO chw_visits
+           (patient_id, visit_date, reason, notes, next_followup_date)
+           VALUES (?, ?, ?, ?, ?)""",
+        (patient["patient_id"], visit_date, reason, notes, followup),
+    )
+
+    # 5. Keep the patient's visit count in step
+    run_insert(
+        "UPDATE patients SET num_visits = num_visits + 1 WHERE patient_id = ?",
+        (patient["patient_id"],),
+    )
+
+    print(f"\nVisit logged for {patient['name']}.")
+    print(f"  Next follow-up: {followup}")
