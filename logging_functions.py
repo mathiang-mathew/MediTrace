@@ -34,18 +34,34 @@ def get_patient(patient_id):
     rows = run_query("SELECT * FROM patients WHERE patient_id = ?", (patient_id,))
     return rows[0] if rows else None
 
+def prompt_patient():
+    """Keep asking for a patient ID until a real patient is found.
+
+    Returns the patient's row, or None if the user types 'back'.
+    """
+    while True:
+        raw = input("Enter patient ID (or 'back' to return to the menu): ").strip()
+
+        if raw.lower() in ("back", "b"):
+            return None
+
+        if not raw.isdigit():
+            print("Patient ID must be a number. Please try again.")
+            continue
+
+        patient = get_patient(int(raw))
+        if patient is None:
+            print(f"No patient found with ID {raw}. Please try again.")
+            continue
+
+        return patient
+
 def log_infection_case():
     """Feature 3 — log an HAI case, auto-linking the patient's care details."""
 
     # 1. Ask for the patient and check they exist
-    raw = input("Enter patient ID: ").strip()
-    if not raw.isdigit():
-        print("Patient ID must be a number.")
-        return
-
-    patient = get_patient(int(raw))
+    patient = prompt_patient()
     if patient is None:
-        print(f"No patient found with ID {raw}.")
         return
 
     # 2. Pull their current care details
@@ -87,14 +103,8 @@ def log_chw_visit():
     """Feature 4 — log a community health worker visit and set the next follow-up."""
 
     # 1. Same patient check as before
-    raw = input("Enter patient ID: ").strip()
-    if not raw.isdigit():
-        print("Patient ID must be a number.")
-        return
-
-    patient = get_patient(int(raw))
+    patient = prompt_patient()
     if patient is None:
-        print(f"No patient found with ID {raw}.")
         return
 
     # 2. Collect the visit details
