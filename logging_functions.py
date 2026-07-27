@@ -10,12 +10,23 @@ from datetime import date, datetime
 from database import run_query, run_insert
 
 def prompt_nonempty(label):
-    """Keep asking until the user types something that isn't blank."""
+    """Keep asking until the user types text containing at least one letter.
+
+    Rejects blanks and purely numeric input, since fields like infection
+    type and reason for visit should be descriptive text.
+    """
     while True:
         value = input(label).strip()
-        if value:
-            return value
-        print("This field cannot be empty. Please try again.")
+
+        if not value:
+            print("This field cannot be empty. Please try again.")
+            continue
+
+        if not any(char.isalpha() for char in value):
+            print("This field must contain letters, not just numbers. Please try again.")
+            continue
+
+        return value
 
 
 def prompt_date(label):
