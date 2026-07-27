@@ -1,4 +1,3 @@
-
 """
 patient_registration.py
 -------------------------
@@ -16,23 +15,19 @@ for analyze_hai_patterns(), so main.py can handle both the same way.
 
 Validation follows Feature 11 of the spec: empty names are rejected, an
 existing patient cannot be re-added as new, age must be a positive
-number, and Back/Home can be typed at any prompt to bail out cleanly
-without a half-filled record being saved.
+number, Back/Home can be typed at any prompt to bail out cleanly, and
+name-like fields (patient name, doctor, nurse, medications, procedures)
+must contain letters rather than being purely numeric.
 """
 
 from database import run_query, run_insert
 
-# equipment/medications/procedures are stored as comma-separated text in
-# care_details (see analysis.py's LIST_COLUMNS) -- this hint keeps data
-# entry consistent with how Kabi's analysis module expects to split it.
 LIST_FIELD_HINT = " (comma-separated, e.g. Ventilator 2, IV stand 5)"
 
 
 class _Nav(Exception):
-    """Raised when the user types Back or Home mid-entry, so a
-    half-filled registration or care update never gets partially saved."""
     def __init__(self, destination):
-        self.destination = destination  # "BACK" or "HOME"
+        self.destination = destination
 
 
 def _check_nav(value):
@@ -44,7 +39,6 @@ def _check_nav(value):
 
 
 def _read(prompt, allow_empty=False):
-    """Read one text field. Rejects blank input unless allow_empty=True."""
     while True:
         value = input(prompt).strip()
         _check_nav(value)
@@ -54,8 +48,19 @@ def _read(prompt, allow_empty=False):
         return value
 
 
+def _read_alpha(prompt, allow_empty=False):
+    while True:
+        value = _read(prompt, allow_empty=allow_empty)
+        if not value:
+            return value
+        items = [item.strip() for item in value.split(",") if item.strip()]
+        if any(item.replace(" ", "").isdigit() for item in items):
+            print("This field must contain letters, not just numbers. Please try again.")
+            continue
+        return value
+
+
 def _read_nonnegative_int(prompt):
-    """Used for number of visits -- 0 is valid (a brand-new patient)."""
     while True:
         value = input(prompt).strip()
         _check_nav(value)
@@ -65,8 +70,6 @@ def _read_nonnegative_int(prompt):
 
 
 def _read_positive_int(prompt):
-    """Used for age -- the schema enforces age > 0, so we check it here too
-    to give a friendly message instead of a raw SQLite error."""
     while True:
         value = input(prompt).strip()
         _check_nav(value)
@@ -84,40 +87,28 @@ def _read_gender(prompt="Enter gender (M for male & F for female): "):
         print("Please enter M or F.")
 
 
-# -------------------------------------------------------------- Helpers
 def patient_name_exists(name):
-    """True if a patient with this exact name is already registered."""
     rows = run_query("SELECT patient_id FROM patients WHERE name = ?", (name,))
     return len(rows) > 0
 
 
 def get_patient_by_id(patient_id):
-    """Returns the patient row, or None if no such ID exists."""
-    rows = run_query(
-        "SELECT * FROM patients WHERE patient_id = ?", (patient_id,)
-    )
+    rows = run_query("SELECT * FROM patients WHERE patient_id = ?", (patient_id,))
     return rows[0] if rows else None
 
 
 def get_care_details(patient_id):
-    """Returns the patient's current care_details row, or None."""
-    rows = run_query(
-        "SELECT * FROM care_details WHERE patient_id = ?", (patient_id,)
-    )
+    rows = run_query("SELECT * FROM care_details WHERE patient_id = ?", (patient_id,))
     return rows[0] if rows else None
 
 
-# --------------------------------------------------------------- Feature 1
 def add_new_patient():
-    """Registers a new patient. Rejects duplicates and invalid input.
-    Prints the assigned patient ID so the worker can use it immediately
-    for Feature 2 (assign care details)."""
     print()
     print("== Add New Patient ==")
     print("(Type Back to go one step Back)")
     print("(Type Home to go back to start)")
     try:
-        name = _read("Enter patient name: ")
+        name = _read_alpha("Enter patient name: ")
         if patient_name_exists(name):
             print(f"A patient named '{name}' already exists. "
                   f"Use Search / filter to find their ID instead of "
@@ -148,12 +139,7 @@ def add_new_patient():
         return None
 
 
-# --------------------------------------------------------------- Feature 2
 def assign_care_details():
-    """Assigns or updates a patient's care details. Looks up the
-    patient by ID first, then inserts a new care_details row or
-    updates the existing one -- care can change over time, so this
-    must never create a second row for the same patient."""
     print()
     print("== Assign Care Details ==")
     print("(Type Back to go one step Back)")
@@ -170,11 +156,11 @@ def assign_care_details():
 
         print(f"Assigning care details for: {patient['name']} (ID {patient['patient_id']})")
         ward = _read("Enter ward: ")
-        doctor = _read("Enter doctor's name: ")
-        nurse = _read("Enter nurse's name: ", allow_empty=True)
+        doctor = _read_alpha("Enter doctor's name: ")
+        nurse = _read_alpha("Enter nurse's name: ", allow_empty=True)
         equipment = _read("Enter equipment used" + LIST_FIELD_HINT + ": ", allow_empty=True)
-        medications = _read("Enter medications" + LIST_FIELD_HINT + ": ", allow_empty=True)
-        procedures = _read(
+        medications = _read_alpha("Enter medications" + LIST_FIELD_HINT + ": ", allow_empty=True)
+        procedures = _read_alpha(
             "Enter procedures e.g. surgery, catheter insertion"
             + LIST_FIELD_HINT + ": ", allow_empty=True
         )
@@ -207,6 +193,5 @@ def assign_care_details():
 
 
 if __name__ == "__main__":
-    # Lets this module be run on its own for testing, without main.py.
     add_new_patient()
     assign_care_details()
