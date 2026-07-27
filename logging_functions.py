@@ -105,10 +105,16 @@ def log_infection_case():
 
     # 5. Show what was linked automatically
     print("\nInfection case logged successfully.")
-    print(f"  Ward:       {care['ward']}")
-    print(f"  Doctor:     {care['doctor']}")
-    print(f"  Equipment:  {care['equipment']}")
-    print(f"  Procedures: {care['procedures']}")
+    print(f"  Patient:        {patient['name']} (ID {patient['patient_id']})")
+    print(f"  Infection type: {infection_type}")
+    print(f"  Date of onset:  {onset}")
+    print("  --- auto-linked from the patient's care record ---")
+    print(f"  Ward:           {care['ward']}")
+    print(f"  Doctor:         {care['doctor']}")
+    print(f"  Nurse:          {care['nurse']}")
+    print(f"  Equipment:      {care['equipment']}")
+    print(f"  Medications:    {care['medications']}")
+    print(f"  Procedures:     {care['procedures']}")
 
 def log_chw_visit():
     """Feature 4 — log a community health worker visit and set the next follow-up."""
