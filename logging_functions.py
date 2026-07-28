@@ -10,12 +10,23 @@ from datetime import date, datetime
 from database import run_query, run_insert
 
 def prompt_nonempty(label):
-    """Keep asking until the user types something that isn't blank."""
+    """Keep asking until the user types text containing at least one letter.
+
+    Rejects blanks and purely numeric input, since fields like infection
+    type and reason for visit should be descriptive text.
+    """
     while True:
         value = input(label).strip()
-        if value:
-            return value
-        print("This field cannot be empty. Please try again.")
+
+        if not value:
+            print("This field cannot be empty. Please try again.")
+            continue
+
+        if not any(char.isalpha() for char in value):
+            print("This field must contain letters, not just numbers. Please try again.")
+            continue
+
+        return value
 
 
 def prompt_date(label):
@@ -34,18 +45,34 @@ def get_patient(patient_id):
     rows = run_query("SELECT * FROM patients WHERE patient_id = ?", (patient_id,))
     return rows[0] if rows else None
 
+def prompt_patient():
+    """Keep asking for a patient ID until a real patient is found.
+
+    Returns the patient's row, or None if the user types 'back'.
+    """
+    while True:
+        raw = input("Enter patient ID (or 'back' to return to the menu): ").strip()
+
+        if raw.lower() in ("back", "b"):
+            return None
+
+        if not raw.isdigit():
+            print("Patient ID must be a number. Please try again.")
+            continue
+
+        patient = get_patient(int(raw))
+        if patient is None:
+            print(f"No patient found with ID {raw}. Please try again.")
+            continue
+
+        return patient
+
 def log_infection_case():
     """Feature 3 — log an HAI case, auto-linking the patient's care details."""
 
     # 1. Ask for the patient and check they exist
-    raw = input("Enter patient ID: ").strip()
-    if not raw.isdigit():
-        print("Patient ID must be a number.")
-        return
-
-    patient = get_patient(int(raw))
+    patient = prompt_patient()
     if patient is None:
-        print(f"No patient found with ID {raw}.")
         return
 
     # 2. Pull their current care details
@@ -78,23 +105,23 @@ def log_infection_case():
 
     # 5. Show what was linked automatically
     print("\nInfection case logged successfully.")
-    print(f"  Ward:       {care['ward']}")
-    print(f"  Doctor:     {care['doctor']}")
-    print(f"  Equipment:  {care['equipment']}")
-    print(f"  Procedures: {care['procedures']}")
+    print(f"  Patient:        {patient['name']} (ID {patient['patient_id']})")
+    print(f"  Infection type: {infection_type}")
+    print(f"  Date of onset:  {onset}")
+    print("  --- auto-linked from the patient's care record ---")
+    print(f"  Ward:           {care['ward']}")
+    print(f"  Doctor:         {care['doctor']}")
+    print(f"  Nurse:          {care['nurse']}")
+    print(f"  Equipment:      {care['equipment']}")
+    print(f"  Medications:    {care['medications']}")
+    print(f"  Procedures:     {care['procedures']}")
 
 def log_chw_visit():
     """Feature 4 — log a community health worker visit and set the next follow-up."""
 
     # 1. Same patient check as before
-    raw = input("Enter patient ID: ").strip()
-    if not raw.isdigit():
-        print("Patient ID must be a number.")
-        return
-
-    patient = get_patient(int(raw))
+    patient = prompt_patient()
     if patient is None:
-        print(f"No patient found with ID {raw}.")
         return
 
     # 2. Collect the visit details
