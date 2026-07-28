@@ -174,11 +174,17 @@ class HAIAnalyzer:
         every patient with care assigned, infected or not -- so we can say
         "4 cases out of the 10 patients in that ward" instead of just "4".
 
-        NOTE: this counts ROWS in care_details. It is only a patient count
-        if care_details holds one row per patient. If a patient can appear
-        more than once, this needs COUNT(DISTINCT patient_id) instead, and
-        the list-column branch above needs the same treatment.
+        Counting rows here is safe because care_details holds exactly one
+        row per patient: patient_id is UNIQUE and the row is UPDATEd in
+        place as care changes rather than a new row being added (SCHEMA.md,
+        "care_details"). So a row count is a patient count.
+
+        If that ever changes and a patient can hold several care rows, this
+        needs COUNT(DISTINCT patient_id) instead, and the list-column
+        branch in _count_from needs the same treatment -- otherwise every
+        denominator inflates and every rate reported here comes out too low.
         """
+
         return self._count_from("care_details")
 
     # ------------------------------------------------------------------
@@ -326,7 +332,8 @@ class HAIAnalyzer:
             
         else:
             print(f"  Highest count: {top_by_cases['name']} "
-                  f"({top_by_cases['cases']} of {total_cases} logged cases).")
+                  f"({top_by_cases['cases']} of the {total_cases} cases "
+                  f"logged hospital-wide).")
 
         # --- highest rate --------------------------------------------------
         if reliable:
