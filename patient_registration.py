@@ -117,6 +117,25 @@ class PositiveIntField(FieldReader):
         return None
 
 
+class AgeField(FieldReader):
+    """For age specifically -- must be a whole number between 1 and 130
+    inclusive. A separate class from PositiveIntField because age has a
+    realistic human upper bound that "positive" alone doesn't capture."""
+
+    MIN_AGE = 1
+    MAX_AGE = 130
+
+    def validate(self, value):
+        if not value.isdigit():
+            print("Please enter a positive whole number.")
+            return None
+        age = int(value)
+        if not (self.MIN_AGE <= age <= self.MAX_AGE):
+            print(f"Age must be between {self.MIN_AGE} and {self.MAX_AGE}. Please try again.")
+            return None
+        return age
+
+
 class NonNegativeIntField(FieldReader):
     """For number of visits -- 0 or more."""
 
@@ -406,7 +425,7 @@ class PatientRegistrationService:
         steps = [
             Step("name", lambda a: LettersField("Enter patient name" + NAV_HINT), post_check=name_duplicate_check),
             Step("illness", lambda a: IllnessField(self.db)),
-            Step("age", lambda a: PositiveIntField("Enter age" + NAV_HINT)),
+            Step("age", lambda a: AgeField("Enter age (1-130)" + NAV_HINT)),
             Step("gender", lambda a: GenderField()),
             Step("contact", lambda a: ContactField("Enter contact (10 digits, e.g. 0788123456)" + NAV_HINT)),
             Step("num_visits", lambda a: NonNegativeIntField("Enter number of visits so far (0 if first)" + NAV_HINT)),
