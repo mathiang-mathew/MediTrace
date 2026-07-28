@@ -11,3 +11,30 @@ Built each functional module in parallel, all working with the same shared schem
     
     
 Built the main menu and integration layer — the numbered CLI loop, global input validation, and the export function — wiring all the modules together into one program - [Esther]
+
+## How to Run
+
+**Requirements:** Python 3 only — no external packages, everything uses the built-in `sqlite3` module.
+
+1. Clone the repo and move into it:
+```bash
+   git clone https://github.com/mathiang-mathew/MediTrace.git
+   cd MediTrace
+```
+
+2. Build the database (creates `meditrace.db` locally — it isn't tracked in git):
+```bash
+   python3 database.py
+```
+
+3. Generate the dummy dataset (safe to re-run any time for a clean reset):
+```bash
+   python3 seed_data.py
+```
+
+4. Run the program:
+```bash
+   python3 main.py
+```
+
+See `SCHEMA.md` for the database structure and design notes.
