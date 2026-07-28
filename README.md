@@ -10,7 +10,9 @@ Built each functional module in parallel, all working with the same shared schem
     HAI pattern analysis (grouped counts by doctor, ward, equipment) - [Kabi]
     
     
-Built the main menu and integration layer — the numbered CLI loop, global input validation, and the export function — wiring all the modules together into one program - [Esther]
+Built the main menu and integration layer — the numbered CLI loop, global input validation, and the export function — wiring all the modules together into one program - [Esther].
+
+For clarification purposes, MediTrace allows the same system permissions for its all authorized users because hospital computers are secured at the department level. Main users are nurses, doctors and other authorized/relevant hospital workers. Nurses (ward) specifically manage everyday patient’s registration, care assignments, and infection logging. Doctors and other relevant officers analyse HAI patterns, review patients’ records and export summary reports.
 
 ## How to Run
 
